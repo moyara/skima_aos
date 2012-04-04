@@ -4,7 +4,6 @@ $(function () {
     // for better performance - to avoid searching in DOM
     var content = $('#content');
     var input = $('#input');
-//    var window = $('#window');
     var status = $('#status');
 
     // my color assigned by the server
@@ -55,15 +54,9 @@ $(function () {
         // check the server source code above
         if (json.type === 'race') { // first response from the server with user's color
             myRace = json.data;
-            status.text(myName + ': ' + myRace.name);
+            status.text(myName + ': ' + myRace.name + '(' + myRace.dataX + ', ' + myRace.dataY);
             input.removeAttr('disabled').focus();
             // from now user can start sending messages
-        } else if (json.type === 'history') { // entire message history
-            // insert every single message to the chat window
-            for (var i=0; i < json.data.length; i++) {
-                addMessage(json.data[i].author, json.data[i].text,
-                           json.data[i].color, new Date(json.data[i].time));
-            }
         } else if (json.type === 'message') { // it's a single message
             input.removeAttr('disabled'); // let the user write another message
             addMessage(json.data.author, json.data.text,
@@ -76,12 +69,12 @@ $(function () {
     /**
      * Send mesage when user presses Enter key
      */
-    input.keydown(function(e) {
 
+    $('#input').keydown(function(e) {
         if (e.keyCode === 13) {
-            var msg = $(this).val();
+            var msg = {type:'utf8', utf8Data:$(this).val()};
             // send the message as an ordinary text
-            connection.send(msg);
+            connection.send(JSON.stringify(msg));
             $(this).val('');
             // disable the input field to make the user wait until server
             // sends back response
@@ -89,15 +82,32 @@ $(function () {
 
             // we know that the first message sent from a user their name
             if (myName === false) {
-                myName = msg;
+                myName = msg.utf8Data;
             }
         }
-/*
+    });
+
+    $(document).keydown(function(e) {
+
         if(e.keyCode === 37 || e.keyCode === 38 || e.keyCode === 39 || e.keyCode ===40){
-          connection.send(JSON.stringify({type:'move', data:keyCode);
-          input.attr('diaabled', 'disabled');
+            var dir;
+            if(e.keyCode == 37)
+              dir = {dataX:-1, dataY:0};
+            else if(e.keyCode == 38)
+              dir = {dataX:0, dataY:1};
+            else if(e.keyCode == 39)
+              dir = {dataX:1, dataY:0};
+            else if(e.keyCode == 40)
+              dir = {dataX:0, dataY:-1};
+
+//            myRace.dataX += dir.dataX; 
+//            myRace.dataY += dir.dataY;
+
+//            var msg = {type:'move', dataX:myRace.dataX, dataY:myRace.dataY};
+            var msg = {type:'move', dataX:dir.dataX, dataY:dir.dataY};
+            connection.send(JSON.stringify(msg));
         }
-*/
+
     });
 
     /**
@@ -116,8 +126,8 @@ $(function () {
     /**
      * Add message to the chat window
      */
-    function addMessage(author, message, color, dt) {
-        content.append('<p><span style="color:' + color + '">' + author + '</span> @ ' +
+    function addMessage(author, message, race, dt) {
+        content.append(author + '</span> @ ' +
              + (dt.getHours() < 10 ? '0' + dt.getHours() : dt.getHours()) + ':'
              + (dt.getMinutes() < 10 ? '0' + dt.getMinutes() : dt.getMinutes())
              + ': ' + message + '</p>');

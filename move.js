@@ -15,7 +15,6 @@ var http = require('http');
  * Global variables
  */
 // entire message history
-var history = [ ];
 // list of currently connected clients (users)
 var clients = [ ];
 
@@ -29,14 +28,14 @@ function htmlEntities(str) {
 
 // Array with some colors
 var races = [
-    {name:'oak', baseX:0, baseY:0},
-    {name:'elf', baseX:0, baseY:0},
-    {name:'human', baseX:0, baseY:0},
-    {name:'magenta', baseX:0, baseY:0},
-    {name:'warewolf', baseX:0, baseY:0},
-    {name:'skeleton', baseX:0, baseY:0},
-    {name:'ghost', baseX:0, baseY:0},
-    {name:'pokemon', baseX:0, baseY:0}
+    {name:'oak', dataX:0, dataY:0},
+    {name:'elf', dataX:0, dataY:0},
+    {name:'human', dataX:0, dataY:0},
+    {name:'magenta', dataX:0, dataY:0},
+    {name:'warewolf', dataX:0, dataY:0},
+    {name:'skeleton', dataX:0, dataY:0},
+    {name:'ghost', dataX:0, dataY:0},
+    {name:'pokemon', dataX:0, dataY:0}
 ];
 
 
@@ -78,33 +77,30 @@ wsServer.on('request', function(request) {
     console.log((new Date()) + ' Connection accepted.');
 
     // send back chat history
-    if (history.length > 0) {
-        connection.sendUTF(JSON.stringify( { type: 'history', data: history} ));
-    }
 
     // user sent some message
     connection.on('message', function(message) {
-/*
+
         try {
-            var json = JSON.parse(message);
-            console.log(message);
+            var json = JSON.parse(message.utf8Data);
         } catch (e) {
             console.log('This doesn\'t look like a valid JSON: ', message);
             return;
         }
 
         if(json.type === 'move'){
-          console.log('Success');
-          userRace = races.shift();
-          connection.sendUTF(JSON.stringify({ type:'color', data: userColor }));
-          console.log((new Date()) + ' User is known as: ' + userName
-                      + ' with ' + userColor + ' color.');
+            userRace.dataX += json.dataX;
+            userRace.dataY += json.dataY;
+
+            console.log((new Date()) + ' ' + userName + ' direction changed : (' + userRace.dataX + ',' + userRace.dataY + ')');
+            connection.sendUTF(JSON.stringify({ type:'race', data: userRace }));
+
         }
-*/
-        if (message.type === 'utf8') { // accept only text
+
+        if (json.type === 'utf8') { // accept only text
             if (userName === false) { // first message sent by user is their name
                 // remember user name
-                userName = htmlEntities(message.utf8Data);
+                userName = htmlEntities(json.utf8Data);
                 // get random color and send it back to the user
                 userRace = races.shift();
                 connection.sendUTF(JSON.stringify({ type:'race', data: userRace }));
@@ -113,16 +109,15 @@ wsServer.on('request', function(request) {
 
             } else { // log and broadcast the message
                 console.log((new Date()) + ' Received Message from '
-                            + userName + ': ' + message.utf8Data);
+                            + userName + ': ' + json.utf8Data);
                 
                 // we want to keep history of all sent messages
                 var obj = {
                     time: (new Date()).getTime(),
-                    text: htmlEntities(message.utf8Data),
+                    text: htmlEntities(json.utf8Data),
                     author: userName,
                     race: userRace
                 };
-                history.push(obj);
 
                 // broadcast message to all connected clients
                 var json = JSON.stringify({ type:'message', data: obj });
