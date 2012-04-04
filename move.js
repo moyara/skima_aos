@@ -17,6 +17,8 @@ var http = require('http');
 // entire message history
 // list of currently connected clients (users)
 var clients = [ ];
+var onChar = [ ]; // 접속중인 캐릭터 JSON
+var num = 0;  // 접속중인 캐릭터 명수
 
 /**
  * Helper function for escaping input strings
@@ -28,14 +30,14 @@ function htmlEntities(str) {
 
 // Array with some colors
 var races = [
-    {name:'oak', dataX:0, dataY:0},
-    {name:'elf', dataX:0, dataY:0},
-    {name:'human', dataX:0, dataY:0},
-    {name:'magenta', dataX:0, dataY:0},
-    {name:'warewolf', dataX:0, dataY:0},
-    {name:'skeleton', dataX:0, dataY:0},
-    {name:'ghost', dataX:0, dataY:0},
-    {name:'pokemon', dataX:0, dataY:0}
+    {name:'oak', dataX:0, dataY:0, face:'right'},
+    {name:'elf', dataX:50, dataY:0, face:'down'},
+    {name:'human', dataX:100, dataY:0, face:'down'},
+    {name:'magenta', dataX:0, dataY:50, face:'right'},
+    {name:'warewolf', dataX:100, dataY:50, face:'left'},
+    {name:'skeleton', dataX:0, dataY:100, face:'up'},
+    {name:'ghost', dataX:50, dataY:100, face:'up'},
+    {name:'pokemon', dataX:100, dataY:100, face:'left'}
 ];
 
 
@@ -89,8 +91,18 @@ wsServer.on('request', function(request) {
         }
 
         if(json.type === 'move'){
-            userRace.dataX += json.dataX;
-            userRace.dataY += json.dataY;
+            if(userRace.dataX+json.dataX <= 100 && userRace.dataX+json.dataX >= 0 && userRace.dataY+json.dataY <= 100 && userRace.dataY + json.dataY >= 0){
+                userRace.dataX += json.dataX;
+                userRace.dataY += json.dataY;
+            }
+
+            for(var i=0;i<num;i++){
+                if(userRace.name !== onChar[i].name &&userRace.dataX == onChar[i].dataX && userRace.dataY == onChar[i].dataY){
+                    console.log((new Date()) + ' there is an collision between ' + userRace.name + ' and ' + onChar[i].name);
+                    userRace.dataX -= json.dataX;
+                    userRace.dataY -= json.dataY;
+                }
+            }
 
             console.log((new Date()) + ' ' + userName + ' direction changed : (' + userRace.dataX + ',' + userRace.dataY + ')');
             connection.sendUTF(JSON.stringify({ type:'race', data: userRace }));
@@ -103,6 +115,7 @@ wsServer.on('request', function(request) {
                 userName = htmlEntities(json.utf8Data);
                 // get random color and send it back to the user
                 userRace = races.shift();
+                onChar[num++] = userRace;
                 connection.sendUTF(JSON.stringify({ type:'race', data: userRace }));
                 console.log((new Date()) + ' User is known as: ' + userName
                             + ' and race is ' + userRace.name);
