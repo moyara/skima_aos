@@ -24,7 +24,7 @@ $(function () {
     }
 
     // open connection
-    var connection = new WebSocket('ws://10.0.2.15:1337');
+    var connection = new WebSocket('ws://192.168.220.128:1337');
 
     connection.onopen = function () {
         // first we want users to enter their names
@@ -54,7 +54,7 @@ $(function () {
         // check the server source code above
         if (json.type === 'race') { // first response from the server with user's color
             myRace = json.data;
-            status.text(myName + ': ' + myRace.name + '(' + myRace.dataX + ', ' + myRace.dataY);
+            status.text(myName);
             input.removeAttr('disabled').focus();
             // from now user can start sending messages
         } else if (json.type === 'message') { // it's a single message

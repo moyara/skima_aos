@@ -11,6 +11,13 @@ var webSocketsServerPort = 1337;
 var webSocketServer = require('websocket').server;
 var http = require('http');
 
+var Mongolian = require('mongolian');
+var server = new Mongolian;
+
+var db = server.db("test");
+
+var gamedb = db.collection("game");
+
 /**
  * Global variables
  */
@@ -30,14 +37,14 @@ function htmlEntities(str) {
 
 // Array with some colors
 var races = [
-    {name:'oak', dataX:0, dataY:0, face:'right'},
-    {name:'elf', dataX:50, dataY:0, face:'down'},
-    {name:'human', dataX:100, dataY:0, face:'down'},
-    {name:'magenta', dataX:0, dataY:50, face:'right'},
-    {name:'warewolf', dataX:100, dataY:50, face:'left'},
-    {name:'skeleton', dataX:0, dataY:100, face:'up'},
-    {name:'ghost', dataX:50, dataY:100, face:'up'},
-    {name:'pokemon', dataX:100, dataY:100, face:'left'}
+    {name:'oak', dataX:0, dataY:0},
+    {name:'elf', dataX:50, dataY:0},
+    {name:'human', dataX:100, dataY:0},
+    {name:'magenta', dataX:0, dataY:50},
+    {name:'warewolf', dataX:100, dataY:50},
+    {name:'skeleton', dataX:0, dataY:100},
+    {name:'ghost', dataX:50, dataY:100},
+    {name:'pokemon', dataX:100, dataY:100}
 ];
 
 
@@ -113,14 +120,40 @@ wsServer.on('request', function(request) {
             if (userName === false) { // first message sent by user is their name
                 // remember user name
                 userName = htmlEntities(json.utf8Data);
-                // get random color and send it back to the user
-                userRace = races.shift();
+    		 // get random race and send it back to the user		
+		userRace = races.shift();
+
+		//입력받은 userName값을 DB에서 search -> 있을경우
+		gamedb.findOne({name : userName},function(err,result){
+                if(err){
+                throw(err)
+                }
+		if(result)      
+                {
+                console.log(result.level);       
+                onChar[num++] = userRace;
+                gamedb.update({name:userName},{"$inc" : {level:1}});		
+                connection.sendUTF(JSON.stringify({type:'race', data: userRace}));		       
+                }
+                //입력받은 userName값을 DB에서 search -> 없을경우
+                else
+                {	
                 onChar[num++] = userRace;
                 connection.sendUTF(JSON.stringify({ type:'race', data: userRace }));
+		
+		// DB에 이름과 종족, 만든 날짜를 전송		
+		gamedb.insert({
+		name : userName,
+		race : userRace.name,
+		created : new Date,
+		level : 1})
+				
                 console.log((new Date()) + ' User is known as: ' + userName
                             + ' and race is ' + userRace.name);
-
-            } else { // log and broadcast the message
+		}
+                });
+                }
+		else { // log and broadcast the message
                 console.log((new Date()) + ' Received Message from '
                             + userName + ': ' + json.utf8Data);
                 
