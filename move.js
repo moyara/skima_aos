@@ -38,13 +38,13 @@ function htmlEntities(str) {
 // Array with some colors
 var races = [
     {name:'oak', dataX:0, dataY:0},
-    {name:'elf', dataX:50, dataY:0},
-    {name:'human', dataX:100, dataY:0},
-    {name:'magenta', dataX:0, dataY:50},
-    {name:'warewolf', dataX:100, dataY:50},
-    {name:'skeleton', dataX:0, dataY:100},
-    {name:'ghost', dataX:50, dataY:100},
-    {name:'pokemon', dataX:100, dataY:100}
+    {name:'elf', dataX:9, dataY:0},
+    {name:'human', dataX:18, dataY:0},
+    {name:'magenta', dataX:0, dataY:9},
+    {name:'warewolf', dataX:18, dataY:9},
+    {name:'skeleton', dataX:0, dataY:18},
+    {name:'ghost', dataX:9, dataY:18},
+    {name:'pokemon', dataX:18, dataY:18}
 ];
 
 
@@ -98,7 +98,7 @@ wsServer.on('request', function(request) {
         }
 
         if(json.type === 'move'){
-            if(userRace.dataX+json.dataX <= 100 && userRace.dataX+json.dataX >= 0 && userRace.dataY+json.dataY <= 100 && userRace.dataY + json.dataY >= 0){
+            if(userRace.dataX+json.dataX <= 18 && userRace.dataX+json.dataX >= 0 && userRace.dataY+json.dataY <= 18 && userRace.dataY + json.dataY >= 0){
                 userRace.dataX += json.dataX;
                 userRace.dataY += json.dataY;
             }
