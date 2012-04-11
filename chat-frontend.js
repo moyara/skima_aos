@@ -5,6 +5,7 @@ $(function () {
     var content = $('#content');
     var input = $('#input');
     var status = $('#status');
+    var wrapper = $('#wrapper');
 
     // my color assigned by the server
     var myRace = false;
@@ -24,7 +25,7 @@ $(function () {
     }
 
     // open connection
-    var connection = new WebSocket('ws://192.168.220.128:1337');
+    var connection = new WebSocket('ws://10.0.2.15:1337');
 
     connection.onopen = function () {
         // first we want users to enter their names
@@ -50,14 +51,28 @@ $(function () {
             return;
         }
 
-        // NOTE: if you're not sure about the JSON structure
-        // check the server source code above
-        if (json.type === 'race') { // first response from the server with user's color
+        // 상대방의 위치가 바뀌었을 때
+        if (json.type === 'position') {
+            var race = json.data;
+            var position = race.dataY*19 + race.dataX;
+            var color = json.color;
+            if(color==='red'){
+              $('div[class='+position+']').css('background-color','red');
+            }
+            else if(color==='white'){
+              $('div[class='+position+']').css('background-color','white');
+            }
+        }
+        // 자신의 위치가 바뀌었을 때
+        else if (json.type === 'race') {
             myRace = json.data;
             status.text(myName);
-            input.removeAttr('disabled').focus();
-            // from now user can start sending messages
-        } else if (json.type === 'message') { // it's a single message
+            var position = myRace.dataY*19 + myRace.dataX;
+            $('div[class='+position+']').css('background-color','green');
+//            input.removeAttr('disabled').focus();
+        }
+        // 메시지가 입력됐을 때
+        else if (json.type === 'message') { // it's a single message
             input.removeAttr('disabled'); // let the user write another message
             addMessage(json.data.author, json.data.text,
                        json.data.color, new Date(json.data.time));
@@ -94,17 +109,17 @@ $(function () {
             if(e.keyCode == 37)
               dir = {dataX:-1, dataY:0};
             else if(e.keyCode == 38)
-              dir = {dataX:0, dataY:1};
+              dir = {dataX:0, dataY:-1};
             else if(e.keyCode == 39)
               dir = {dataX:1, dataY:0};
             else if(e.keyCode == 40)
-              dir = {dataX:0, dataY:-1};
+              dir = {dataX:0, dataY:1};
 
-//            myRace.dataX += dir.dataX; 
-//            myRace.dataY += dir.dataY;
+            var position = myRace.dataX+myRace.dataY*19;
+            $('div[class='+position+']').css('background-color','white');
 
-//            var msg = {type:'move', dataX:myRace.dataX, dataY:myRace.dataY};
             var msg = {type:'move', dataX:dir.dataX, dataY:dir.dataY};
+            connection.send(JSON.stringify({type:'remove', data:''}));
             connection.send(JSON.stringify(msg));
         }
 

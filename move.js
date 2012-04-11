@@ -97,6 +97,12 @@ wsServer.on('request', function(request) {
             return;
         }
 
+        if(json.type === 'remove'){
+            for (var i=0; i < clients.length; i++) {
+                if(connection === clients[i]) continue;
+                clients[i].sendUTF(JSON.stringify({type:'position',data:userRace,color:'white'}));
+            }
+        }
         if(json.type === 'move'){
             if(userRace.dataX+json.dataX <= 18 && userRace.dataX+json.dataX >= 0 && userRace.dataY+json.dataY <= 18 && userRace.dataY + json.dataY >= 0){
                 userRace.dataX += json.dataX;
@@ -113,6 +119,11 @@ wsServer.on('request', function(request) {
 
             console.log((new Date()) + ' ' + userName + ' direction changed : (' + userRace.dataX + ',' + userRace.dataY + ')');
             connection.sendUTF(JSON.stringify({ type:'race', data: userRace }));
+         
+            for (var i=0; i < clients.length; i++) {
+                if(connection === clients[i]) continue;
+                clients[i].sendUTF(JSON.stringify({type:'position',data:userRace,color:'red'}));
+            }
 
         }
 
@@ -125,35 +136,45 @@ wsServer.on('request', function(request) {
 
 		//입력받은 userName값을 DB에서 search -> 있을경우
 		gamedb.findOne({name : userName},function(err,result){
-                if(err){
-                throw(err)
-                }
-		if(result)      
-                {
-                console.log(result.level);       
-                onChar[num++] = userRace;
-                gamedb.update({name:userName},{"$inc" : {level:1}});		
-                connection.sendUTF(JSON.stringify({type:'race', data: userRace}));		       
-                }
+			if(err){
+			    throw(err)
+			}
+			if(result)      
+		        {
+			  console.log(result.level);       
+			  onChar[num++] = userRace;
+			  gamedb.update({name:userName},{"$inc" : {level:1}});		
+			  connection.sendUTF(JSON.stringify({type:'race', data: userRace}));
+                          for(var i=0;i<num;i++){
+				console.log(""+i);
+			    if(userRace.name == onChar[i].name) continue;
+                            connection.sendUTF(JSON.stringify({type:'position', data: onChar[i], color:'red'}));
+                          }
+		        }
                 //입력받은 userName값을 DB에서 search -> 없을경우
-                else
-                {	
-                onChar[num++] = userRace;
-                connection.sendUTF(JSON.stringify({ type:'race', data: userRace }));
+		        else
+		        {	
+		          onChar[num++] = userRace;
+		          connection.sendUTF(JSON.stringify({ type:'race', data: userRace }));
+                          for(var i=0;i<num;i++){
+				console.log(""+i);
+			    if(userRace.name == onChar[i].name) continue;
+                            connection.sendUTF(JSON.stringify({type:'position', data: onChar[i], color:'red'}));
+                          }
 		
-		// DB에 이름과 종족, 만든 날짜를 전송		
-		gamedb.insert({
-		name : userName,
-		race : userRace.name,
-		created : new Date,
-		level : 1})
+			// DB에 이름과 종족, 만든 날짜를 전송		
+			  gamedb.insert({
+			    name : userName,
+			    race : userRace.name,
+			    created : new Date,
+			    level : 1})
 				
-                console.log((new Date()) + ' User is known as: ' + userName
-                            + ' and race is ' + userRace.name);
-		}
+		        console.log((new Date()) + ' User is known as: ' + userName
+		                    + ' and race is ' + userRace.name);
+			}
                 });
-                }
-		else { // log and broadcast the message
+            }
+	    else { // log and broadcast the message
                 console.log((new Date()) + ' Received Message from '
                             + userName + ': ' + json.utf8Data);
                 
@@ -178,6 +199,12 @@ wsServer.on('request', function(request) {
     // user disconnected
     connection.on('close', function(connection) {
         if (userName !== false && userRace !== false) {
+            for (var i=0; i < clients.length; i++) {
+                if(connection === clients[i]) continue;
+                clients[i].sendUTF(JSON.stringify({type:'position',data:userRace,color:'white'}));
+            }
+            userRace.dataX=-1;
+            userRace.dataY=-1;
             console.log((new Date()) + " Peer "
                 + connection.remoteAddress + " disconnected.");
             // remove user from the list of connected clients
